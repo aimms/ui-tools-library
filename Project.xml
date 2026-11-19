@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<LibraryProject AimmsVersion="26.8.1.2 unicode x64" ProjectUUID="BC932ACC-219A-4EB5-A462-7C6A6D5A3489">
+	<ModelFileName>libUITools.ams</ModelFileName>
+	<Prefix>uit</Prefix>
+	<DisplayName>libUITools</DisplayName>
+</LibraryProject>

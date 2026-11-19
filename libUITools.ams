@@ -1,0 +1,445 @@
+## ams_version=1.0
+
+LibraryModule libUITools {
+	Prefix: uit;
+	Interface: Public_Section;
+	Property: NoSave;
+	Comment: {
+		"Library for converting WinUI AIMMS applications to WebUI (prefix w2w).
+		
+		It contains:
+		- bp_useWinUI, bp_useWebUI and pr_DialogProgress: a progress dialog that works in both WinUI and WebUI.
+		- a notification manager: a list of notifications and a WebUI page to show them (pr_addNotification).
+		
+		Notification manager
+		--------------------
+		Manage a list of notifications.
+		
+		A notification consists of:
+		- the message (the most important part)
+		
+		Optional input parts of a notification are:
+		- the severity level (default: info)
+		- preventsSolve - whether or not it prevents solving the scenario at hand (default 0)
+		- page1 - a page in the set of all pages, that can be visited for further information/handling (default empty).
+		- page2 - a second page in the set of all pages, that can be visited for further information/handling (default empty) - 
+		          especially interesting when two items are related but not presented on the same page.
+		
+		Management parts of a notification are:
+		- handled - a binary indicating whether the notification is considered to be handled. 
+		            the business user may toggle this on/off multiple times.
+		- created - a timestamp (standard format ccyy-mm-dd HH::MM:SS) in local time.
+		- last-handled - a timestamp (standard format ccyy-mm-dd HH::MM:SS) in local time when the notification is last marked as handled."
+	}
+	Section Public_Section {
+		Section progress_interface {
+			Parameter bp_useWinUI {
+				Range: binary;
+				Definition: 1 - bp_useWebUI;
+			}
+			Parameter bp_useWebUI {
+				InitialData: 1;
+			}
+			Procedure pr_DialogProgress {
+				Arguments: (message,percentage);
+				Body: {
+					if bp_useWinUI then
+						! https://documentation.aimms.com/functionreference/user-interface-related-functions/dialog-functions/dialogprogress.html
+						DialogProgress( message, percentage );
+					else
+						! https://documentation.aimms.com/webui/library.html#webui::SetProgressMessage
+						_p_10pct := floor( percentage / 10 );
+						_sp_msg := formatString("%s %i%% [%s%s]", message, percentage, _p_10pct * character(9608), ( 10 - _p_10pct ) * "_");
+						webui::SetProgressMessage(_sp_msg);
+					endif ;
+				}
+				Comment: {
+					"
+					
+					
+					===================================================================================================="
+				}
+				StringParameter message {
+					Property: Input;
+				}
+				Parameter percentage {
+					Property: Optional;
+				}
+				Parameter _p_10pct;
+				StringParameter _sp_msg;
+			}
+		}
+		Section notification_infterface {
+			Set s_severityLevels {
+				Definition: data { info, warning, error };
+			}
+			Procedure pr_addNotification {
+				Arguments: (sp_message,ep_severity,bp_preventsSolve,ep_page1,ep_page2);
+				Body: {
+					pr_workAddNotification(sp_message,ep_severity,bp_preventsSolve,ep_page1,ep_page2);
+				}
+				Comment: "Add a notification to the list of notifications.";
+				StringParameter sp_message {
+					Property: Input;
+					Comment: "The notification message - essential.";
+				}
+				ElementParameter ep_severity {
+					Range: s_severityLevels;
+					Default: 'info';
+					Property: Optional;
+				}
+				Parameter bp_preventsSolve {
+					Range: binary;
+					Default: 0;
+					Property: Optional;
+				}
+				ElementParameter ep_page1 {
+					Range: webui::AllPageIds;
+					Property: Optional;
+				}
+				ElementParameter ep_page2 {
+					Range: webui::AllPageIds;
+					Property: Optional;
+				}
+			}
+		}
+	}
+	Section Private_Section {
+		Section The_notification_list {
+			DeclarationSection management_sets {
+				Set s_allNotificationNumbers {
+					SubsetOf: Integers;
+					Comment: {
+						"The root set of all notification numbers.
+						
+						Starts empty, and an element is appended for each notification."
+					}
+				}
+				Index i_notification {
+					Range: s_allNotificationNumbers;
+				}
+				Set s_availableNotificationNumbers {
+					SubsetOf: s_allNotificationNumbers;
+					Comment: "The numbers of the visible notifications (in pracitce, notifications not deleted).";
+				}
+				Index i_availableNotification {
+					Range: s_availableNotificationNumbers;
+				}
+				Set s_shownNotificationNumbers {
+					SubsetOf: s_allNotificationNumbers;
+				}
+				Index i_shownNotification {
+					Range: s_shownNotificationNumbers;
+				}
+			}
+			Section notification_table_identifiers {
+				DeclarationSection input_data {
+					StringParameter sp_message {
+						IndexDomain: i_notification;
+					}
+					ElementParameter ep_severity {
+						IndexDomain: i_notification;
+						Range: s_severityLevels;
+					}
+					Parameter bp_preventsSolve {
+						IndexDomain: i_notification;
+						Range: binary;
+						Comment: "When 1, not handling the corresponding message likely prevents solving the mathematical program(s) at hand successfully.";
+					}
+					ElementParameter ep_page1 {
+						IndexDomain: i_notification;
+						Range: webui::AllPageIds;
+					}
+					ElementParameter ep_page2 {
+						IndexDomain: i_notification;
+						Range: webui::AllPageIds;
+					}
+				}
+				DeclarationSection data_for_handling_notifications {
+					Parameter bp_handled {
+						IndexDomain: (uit::i_notification);
+						Range: binary;
+						Comment: {
+							"webui::UponChangeProcedure preferred w2w::pr_handledUponChange
+							but for now made read only by removing it from CurrentInputs
+							See also https://gitlab.aimms.com/aimms/web_ui/prod/webui/-/work_items/1544"
+						}
+					}
+					StringParameter sp_creationDate {
+						IndexDomain: i_notification;
+						Comment: "creation date in local time.";
+					}
+					StringParameter sp_handledDate {
+						IndexDomain: i_notification;
+					}
+				}
+			}
+		}
+		Procedure pr_workAddNotification {
+			Arguments: (_sp_message,_ep_severity,_bp_preventsSolve,_ep_page1,_ep_page2);
+			Body: {
+				block ! Get a new notification number
+					s_allNotificationNumbers += card( s_allNotificationNumbers ) + 1 ; ! First number is 1.
+					_ep_newNotificationNumber := last( s_allNotificationNumbers );
+					s_availableNotificationNumbers += _ep_newNotificationNumber ;
+					s_shownNotificationNumbers += _ep_newNotificationNumber ;
+				endblock ;
+				
+				block ! Copy the arguments to the list of notifications.
+					sp_message(       _ep_newNotificationNumber ) := _sp_message ;
+					ep_severity(      _ep_newNotificationNumber ) := _ep_severity ;
+					bp_preventsSolve( _ep_newNotificationNumber ) := _bp_preventsSolve ;
+					ep_page1(         _ep_newNotificationNumber ) := _ep_page1 ;
+					ep_page2(         _ep_newNotificationNumber ) := _ep_page2 ;
+				endblock ;
+				
+				block ! Register time
+					sp_creationDate(  _ep_newNotificationNumber ) := CurrentToString( "%c%y-%m-%d %H:%M:%S" );
+				
+				
+				endblock ;
+			}
+			Comment: "Add a notification to the list of notifications.";
+			DeclarationSection Argument_declarations {
+				StringParameter _sp_message {
+					Property: Input;
+					Comment: "The notification message - essential.";
+				}
+				ElementParameter _ep_severity {
+					Range: s_severityLevels;
+					Default: 'info';
+					Property: Optional;
+				}
+				Parameter _bp_preventsSolve {
+					Range: binary;
+					Default: 0;
+					Property: Optional;
+				}
+				ElementParameter _ep_page1 {
+					Range: webui::AllPageIds;
+					Property: Optional;
+				}
+				ElementParameter _ep_page2 {
+					Range: webui::AllPageIds;
+					Property: Optional;
+				}
+			}
+			ElementParameter _ep_newNotificationNumber {
+				Range: s_allNotificationNumbers;
+			}
+		}
+		Section Leverage_WebUI_section {
+			DeclarationSection leverage_webui {
+				StringParameter sp_tableTitle {
+					Definition: "Notifications table";
+				}
+				StringParameter sp_secondaryActions {
+					IndexDomain: (webui::indexPageExtension,webui::indexPageActionSpec);
+					Definition: {
+						{
+							( '1', 'displaytext' ) : "Show all",  
+							( '1', 	'icon'       ) : "aimms-volume-5",  
+							( '1', 	'procedure'  ) : "w2w::pr_showAll",  
+							( '1', 	'state'      ) : "Active",
+						
+							( '2', 'displaytext' ) : "Show unhandled",  
+							( '2', 	'icon'       ) : "aimms-volume-2",  
+							( '2', 	'procedure'  ) : "w2w::pr_showUnhandled",  
+							( '2', 	'state'      ) : "Active" 
+						}
+					}
+				}
+				StringParameter sp_itemActions {
+					IndexDomain: (webui::indexWidgetItemActionSpec,webui::indexPageExtension,webui::indexWidgetActionSpec);
+					Definition: {
+						if webui::indexWidgetItemActionSpec in s_notificationTableIdentifiers then
+							sp_rowActions(webui::indexPageExtension, webui::indexWidgetActionSpec)
+						else
+							""
+						endif
+					}
+					Comment: "As the action per item is the same for all elements in the row, the action defined per row can be used here for all elements in that row.";
+				}
+				Set s_notificationTableIdentifiers {
+					SubsetOf: AllIdentifiers;
+					Definition: {
+						notification_table_identifiers
+						! See https://documentation.aimms.com/language-reference/advanced-language-components/model-structure-and-modules/section-declaration-and-attributes.html
+						!     Section names as identifier subsets.
+					}
+				}
+				StringParameter sp_rowActions {
+					IndexDomain: (webui::indexPageExtension,webui::indexWidgetActionSpec);
+					Definition: {
+						{
+							( '1', 'displaytext' ) : "toggle handled",  
+							( '1', 'tooltip'     ) : "",  
+							( '1', 'icon'        ) : "aimms-toggle",  
+							( '1', 'procedure'   ) : "w2w::pr_toggleHandled",  
+							( '1', 'state'       ) : "Active",  
+							( '1', 'actiontype'  ) : "Procedure",  
+						
+							( '2', 'displaytext' ) : "delete notification",  
+							( '2', 'tooltip'     ) : "",  
+							( '2', 'icon'        ) : "aimms-bin",  
+							( '2', 'procedure'   ) : "w2w::pr_deleteNotification",  
+							( '2', 'state'       ) : "Active",  
+							( '2', 'actiontype'  ) : "Procedure",  
+						
+							( '3', 'displaytext' ) : "Open page 1",  
+							( '3', 'tooltip'     ) : "",  
+							( '3', 'icon'        ) : "aimms-display",  
+							( '3', 'procedure'   ) : "w2w::pr_openPage1",  
+							( '3', 'state'       ) : "Active",  
+							( '3', 'actiontype'  ) : "Procedure",
+						
+							( '4', 'displaytext' ) : "Open page 2",  
+							( '4', 'tooltip'     ) : "",  
+							( '4', 'icon'        ) : "aimms-display3",  
+							( '4', 'procedure'   ) : "w2w::pr_openPage2",  
+							( '4', 'state'       ) : "Active",  
+							( '4', 'actiontype'  ) : "Procedure"
+						
+						}
+					}
+					Comment: "As the action per item is the same for all elements in the row, it is defined for an entire row once here.";
+				}
+				ElementParameter ep_storeFocusNotification {
+					Range: s_allNotificationNumbers;
+				}
+			}
+			Procedure pr_showAll {
+				Body: {
+					s_shownNotificationNumbers := s_availableNotificationNumbers ;
+				}
+			}
+			Procedure pr_showUnhandled {
+				Body: {
+					s_shownNotificationNumbers := 
+						{ i_availableNotification | bp_handled(i_availableNotification) = 0 };
+				}
+			}
+			Section ActionsOnNotificationRows {
+				Procedure pr_toggleHandled {
+					Body: {
+						if ep_storeFocusNotification then
+							bp_handled( ep_storeFocusNotification ) := 1 - bp_handled( ep_storeFocusNotification );
+						
+							! Set the handled date of the notification just changed.
+							sp_handledDate(ep_storeFocusNotification)   :=
+								if bp_handled(ep_storeFocusNotification) then CurrentToString("%c%y-%m-%d %H:%M:%S") else "" endif ;
+						
+						endif ;
+					}
+				}
+				Procedure pr_deleteNotification {
+					Body: {
+						if ep_storeFocusNotification then
+							sp_message(      ep_storeFocusNotification ) := "" ;
+							sp_creationDate( ep_storeFocusNotification ) := "" ;
+							sp_handledDate(  ep_storeFocusNotification ) := "" ;
+							s_shownNotificationNumbers     -= ep_storeFocusNotification ;
+							s_availableNotificationNumbers -= ep_storeFocusNotification ;
+							ep_storeFocusNotification := '' ;
+						endif ;
+					}
+				}
+				Procedure pr_openPage1 {
+					Body: {
+						if ep_storeFocusNotification then
+							if ep_page1( ep_storeFocusNotification ) then
+								webui::OpenPage( ep_page1( ep_storeFocusNotification ) );
+							endif ;
+						endif ;
+					}
+				}
+				Procedure pr_openPage2 {
+					Body: {
+						if ep_storeFocusNotification then
+							if ep_page2( ep_storeFocusNotification ) then
+								webui::OpenPage( ep_page2( ep_storeFocusNotification ) );
+							endif ;
+						endif ;
+					}
+				}
+			}
+			Procedure pr_handledUponChange {
+				Arguments: (hasChanged,oldValue);
+				Body: {
+					_sp_handledDate := CurrentToString("%c%y-%m-%d %H:%M:%S");
+					
+					! Set the handled date of all notifications that are just changed.
+					sp_handledDate(i_notification) | hasChanged(i_notification) :=
+						if bp_handled(i_notification) then _sp_handledDate else "" endif ;
+				}
+				Parameter hasChanged {
+					IndexDomain: (uit::i_notification);
+					Property: Input;
+				}
+				Parameter oldValue {
+					IndexDomain: (uit::i_notification);
+					Property: Input;
+				}
+				StringParameter _sp_handledDate;
+			}
+		}
+		Section Lib_Start_Stop {
+			Procedure LibraryInitialization {
+				Comment: "Add initialization statements here that do not require any other library being initialized already.";
+			}
+			Procedure PostLibraryInitialization {
+				Body: {
+					webui::IdentifierElementText(IndexIdentifiers) :=$ data {
+					    'uit::bp_handled' : "handled",
+					    'uit::sp_message' : "msg",
+					    'uit::ep_severity' : "sev",
+					    'uit::bp_preventsSolve' : "prevents solve",
+					    'uit::ep_page1' : "page1",
+					    'uit::ep_page2' : "page2",
+					    'uit::sp_creationDate' : "created",
+					    'uit::sp_handledDate' : "handled",
+					    'uit::i_shownNotification' : "#"
+					};
+					
+					! Only handled remains 
+					CurrentInputs -=  data {  
+					    'uit::bp_handled'  , ! using an upon change procedure doesn't seem to work, see https://gitlab.aimms.com/aimms/web_ui/prod/webui/-/work_items/1544
+					
+					    'uit::sp_message'  ,
+					    'uit::ep_severity'  ,
+					    'uit::bp_preventsSolve'  ,
+					    'uit::ep_page1'  ,
+					    'uit::ep_page2'  ,
+					    'uit::sp_creationDate'  ,
+					    'uit::sp_handledDate'  ,
+					    'uit::i_shownNotification' } ;
+				}
+				Comment: {
+					"Add initialization statements here that require another library to be initialized already,
+					or add statements that require the Data Management module to be initialized."
+				}
+			}
+			Procedure PreLibraryTermination {
+				Body: {
+					return 1;
+				}
+				Comment: {
+					"Add termination statements here that require all other libraries to be still alive.
+					Return 1 if you allow the termination sequence to continue.
+					Return 0 if you want to cancel the termination sequence."
+				}
+			}
+			Procedure LibraryTermination {
+				Body: {
+					return 1;
+				}
+				Comment: {
+					"Add termination statements here that do not require other libraries to be still alive.
+					Return 1 to allow the termination sequence to continue.
+					Return 0 if you want to cancel the termination sequence.
+					It is recommended to only use the procedure PreLibraryTermination to cancel the termination sequence and let this procedure always return 1."
+				}
+			}
+		}
+	}
+}
