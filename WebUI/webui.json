@@ -1,0 +1,368 @@
+{
+  "version": "4.67.0",
+  "application": {
+    "aimms.widget.type": {
+      "literal": "application"
+    },
+    "browser.language": {
+      "aimms": {
+        "contents": [
+          "webui::ClientBrowserLanguage"
+        ]
+      }
+    },
+    "browser.name": {
+      "aimms": {
+        "contents": [
+          "webui::ClientBrowserName"
+        ]
+      }
+    },
+    "browser.timezone": {
+      "aimms": {
+        "contents": [
+          "webui::BrowserTimeZone"
+        ]
+      }
+    },
+    "ignoredst": {
+      "aimms": {
+        "contents": [
+          "webui::IgnoreDST"
+        ]
+      }
+    },
+    "pages": {
+      "literal": {
+        "name": "root",
+        "slug": "root",
+        "children": [
+          {
+            "name": "libUITools",
+            "slug": "uit::notificationmanagerlibrary",
+            "children": [
+              {
+                "name": "NotificationHandling",
+                "type": "pagev2-grid",
+                "slug": "uit::notificationhandling",
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "theme.classic": {
+      "literal": "NOT_ALLOWED"
+    },
+    "timezone": {
+      "aimms": {
+        "contents": [
+          "webui::DisplayTimeZone"
+        ]
+      }
+    }
+  },
+  "pages/notificationhandling": {
+    "aimms.widget.type": {
+      "literal": "pagev2-grid"
+    },
+    "bindings": {
+      "literal": [
+        {
+          "widgetUri": "uit::the_notifications",
+          "gridArea": "area-a",
+          "dndId": "Unassigned widgetsw2w::the_notifications"
+        }
+      ]
+    },
+    "layoutId": {
+      "literal": "Layout9"
+    },
+    "secondarypageactions": {
+      "aimms": {
+        "contents": [
+          "uit::sp_secondaryActions"
+        ],
+        "slices": [
+          {
+            "identifier": "uit::sp_secondaryActions",
+            "slice": [
+              {
+                "index": "webui::indexPageExtension",
+                "type": "free",
+                "value": "webui::indexPageExtension"
+              },
+              {
+                "index": "webui::indexPageActionSpec",
+                "type": "free",
+                "value": "webui::indexPageActionSpec"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "widgets": {
+      "literal": [
+        {
+          "uri": "uit::the_notifications",
+          "layoutInfo": {
+            "width": "2",
+            "height": "1"
+          }
+        }
+      ]
+    }
+  },
+  "widgets/the_notifications": {
+    "aimms.widget.type": {
+      "literal": "table"
+    },
+    "contents.__display_order__": {
+      "literal": [
+        "contents.0",
+        "contents.1",
+        "contents.3",
+        "contents.2",
+        "contents.4",
+        "contents.5",
+        "contents.6",
+        "contents.7"
+      ]
+    },
+    "contents.0.displaydomain": {
+      "literal": "1"
+    },
+    "contents.0.identifier": {
+      "literal": {
+        "identifier": "uit::bp_handled",
+        "slice": [
+          {
+            "index": "uit::i_notification",
+            "type": "subset",
+            "value": "uit::i_shownNotification"
+          }
+        ]
+      }
+    },
+    "contents.1.displaydomain": {
+      "literal": "1"
+    },
+    "contents.1.identifier": {
+      "literal": {
+        "identifier": "uit::sp_message",
+        "slice": [
+          {
+            "index": "uit::i_notification",
+            "type": "subset",
+            "value": "uit::i_shownNotification"
+          }
+        ]
+      }
+    },
+    "contents.2.displaydomain": {
+      "literal": "1"
+    },
+    "contents.2.identifier": {
+      "literal": {
+        "identifier": "uit::bp_preventsSolve",
+        "slice": [
+          {
+            "index": "uit::i_notification",
+            "type": "subset",
+            "value": "uit::i_shownNotification"
+          }
+        ]
+      }
+    },
+    "contents.3.displaydomain": {
+      "literal": "1"
+    },
+    "contents.3.identifier": {
+      "literal": {
+        "identifier": "uit::ep_severity",
+        "slice": [
+          {
+            "index": "uit::i_notification",
+            "type": "subset",
+            "value": "uit::i_shownNotification"
+          }
+        ]
+      }
+    },
+    "contents.4.displaydomain": {
+      "literal": "1"
+    },
+    "contents.4.identifier": {
+      "literal": {
+        "identifier": "uit::ep_page1",
+        "slice": [
+          {
+            "index": "uit::i_notification",
+            "type": "subset",
+            "value": "uit::i_shownNotification"
+          }
+        ]
+      }
+    },
+    "contents.5.displaydomain": {
+      "literal": "1"
+    },
+    "contents.5.identifier": {
+      "literal": {
+        "identifier": "uit::ep_page2",
+        "slice": [
+          {
+            "index": "uit::i_notification",
+            "type": "subset",
+            "value": "uit::i_shownNotification"
+          }
+        ]
+      }
+    },
+    "contents.6.displaydomain": {
+      "literal": "1"
+    },
+    "contents.6.identifier": {
+      "literal": {
+        "identifier": "uit::sp_creationDate",
+        "slice": [
+          {
+            "index": "uit::i_notification",
+            "type": "subset",
+            "value": "uit::i_shownNotification"
+          }
+        ]
+      }
+    },
+    "contents.7.displaydomain": {
+      "literal": "1"
+    },
+    "contents.7.identifier": {
+      "literal": {
+        "identifier": "uit::sp_handledDate",
+        "slice": [
+          {
+            "index": "uit::i_notification",
+            "type": "subset",
+            "value": "uit::i_shownNotification"
+          }
+        ]
+      }
+    },
+    "contents.partition": {
+      "literal": {
+        "rowHeader": [
+          "uit::i_notification"
+        ],
+        "colHeader": [
+          "<IDENTIFIER-SET>"
+        ],
+        "aggregated": []
+      }
+    },
+    "contextmenu": {
+      "aimms": {
+        "contents": [
+          "uit::sp_itemActions"
+        ],
+        "slices": [
+          {
+            "identifier": "uit::sp_itemActions",
+            "slice": [
+              {
+                "index": "webui::indexWidgetItemActionSpec",
+                "type": "free",
+                "value": "webui::indexWidgetItemActionSpec"
+              },
+              {
+                "index": "webui::indexPageExtension",
+                "type": "free",
+                "value": "webui::indexPageExtension"
+              },
+              {
+                "index": "webui::indexWidgetActionSpec",
+                "type": "free",
+                "value": "webui::indexWidgetActionSpec"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "custom.column.widths": {
+      "literal": [
+        {
+          "type": "colHeader",
+          "colKey": {
+            "<IDENTIFIER-SET>": "uit::bp_handled"
+          },
+          "width": 12.06
+        },
+        {
+          "type": "colHeader",
+          "colKey": {
+            "<IDENTIFIER-SET>": "uit::sp_message"
+          },
+          "width": 87.47
+        },
+        {
+          "type": "colHeader",
+          "colKey": {
+            "<IDENTIFIER-SET>": "uit::bp_preventsSolve"
+          },
+          "width": 22.46
+        },
+        {
+          "type": "colHeader",
+          "colKey": {
+            "<IDENTIFIER-SET>": "uit::sp_creationDate"
+          },
+          "width": 28.24
+        },
+        {
+          "type": "colHeader",
+          "colKey": {
+            "<IDENTIFIER-SET>": "uit::sp_handledDate"
+          },
+          "width": 29.72
+        },
+        {
+          "type": "colHeader",
+          "colKey": {
+            "<IDENTIFIER-SET>": "uit::ep_severity"
+          },
+          "width": 11.87
+        }
+      ]
+    },
+    "indices.__display_order__": {
+      "literal": [
+        "indices.0"
+      ]
+    },
+    "indices.0.index": {
+      "literal": "uit::i_shownNotification"
+    },
+    "indices.0.storefocus": {
+      "literal": {
+        "identifier": "uit::ep_storeFocusNotification"
+      }
+    },
+    "name": {
+      "literal": "the_notifications"
+    },
+    "title": {
+      "aimms": {
+        "contents": [
+          "uit::sp_tableTitle"
+        ],
+        "slices": []
+      }
+    },
+    "views": {
+      "literal": {}
+    }
+  }
+}
