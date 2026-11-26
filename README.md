@@ -1,4 +1,4 @@
-<p align="center"><img src="./assets/banner.png" alt="aimms toolkit: UI Tools Library" width="100%"></p>
+<p align="center"><img src="./.assets/banner.png" alt="aimms toolkit: UI Tools Library" width="100%"></p>
 
 # UI Tools Library
 
