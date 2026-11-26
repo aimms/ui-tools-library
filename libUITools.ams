@@ -5,7 +5,7 @@ LibraryModule libUITools {
 	Interface: Public_Section;
 	Property: NoSave;
 	Comment: {
-		"Library for converting WinUI AIMMS applications to WebUI (prefix w2w).
+		"Library for converting WinUI AIMMS applications to WebUI (prefix uit).
 		
 		It contains:
 		- bp_useWinUI, bp_useWebUI and pr_DialogProgress: a progress dialog that works in both WinUI and WebUI.
@@ -102,6 +102,14 @@ LibraryModule libUITools {
 					Property: Optional;
 				}
 			}
+			Procedure pr_clearNotifications {
+				Body: {
+					ep_storeFocusNotification := '' ;
+					empty sp_message, ep_severity, bp_preventsSolve, ep_page1, ep_page2, bp_handled, sp_creationDate, sp_handledDate ;
+					empty s_shownNotificationNumbers, s_availableNotificationNumbers, s_allNotificationNumbers ;
+				}
+				Comment: "Remove all notifications, for example before a data check runs again.";
+			}
 		}
 	}
 	Section Private_Section {
@@ -130,6 +138,10 @@ LibraryModule libUITools {
 				}
 				Index i_shownNotification {
 					Range: s_shownNotificationNumbers;
+				}
+				Parameter bp_showUnhandledOnly {
+					Range: binary;
+					Comment: "1 when the table shows only the unhandled notifications (page action Show unhandled).";
 				}
 			}
 			Section notification_table_identifiers {
@@ -160,7 +172,7 @@ LibraryModule libUITools {
 						IndexDomain: (uit::i_notification);
 						Range: binary;
 						Comment: {
-							"webui::UponChangeProcedure preferred w2w::pr_handledUponChange
+							"webui::UponChangeProcedure preferred uit::pr_handledUponChange
 							but for now made read only by removing it from CurrentInputs
 							See also https://gitlab.aimms.com/aimms/web_ui/prod/webui/-/work_items/1544"
 						}
@@ -239,12 +251,12 @@ LibraryModule libUITools {
 						{
 							( '1', 'displaytext' ) : "Show all",  
 							( '1', 	'icon'       ) : "aimms-volume-5",  
-							( '1', 	'procedure'  ) : "w2w::pr_showAll",  
+							( '1', 	'procedure'  ) : "uit::pr_showAll",  
 							( '1', 	'state'      ) : "Active",
 						
 							( '2', 'displaytext' ) : "Show unhandled",  
 							( '2', 	'icon'       ) : "aimms-volume-2",  
-							( '2', 	'procedure'  ) : "w2w::pr_showUnhandled",  
+							( '2', 	'procedure'  ) : "uit::pr_showUnhandled",  
 							( '2', 	'state'      ) : "Active" 
 						}
 					}
@@ -275,28 +287,28 @@ LibraryModule libUITools {
 							( '1', 'displaytext' ) : "toggle handled",  
 							( '1', 'tooltip'     ) : "",  
 							( '1', 'icon'        ) : "aimms-toggle",  
-							( '1', 'procedure'   ) : "w2w::pr_toggleHandled",  
+							( '1', 'procedure'   ) : "uit::pr_toggleHandled",  
 							( '1', 'state'       ) : "Active",  
 							( '1', 'actiontype'  ) : "Procedure",  
 						
 							( '2', 'displaytext' ) : "delete notification",  
 							( '2', 'tooltip'     ) : "",  
 							( '2', 'icon'        ) : "aimms-bin",  
-							( '2', 'procedure'   ) : "w2w::pr_deleteNotification",  
+							( '2', 'procedure'   ) : "uit::pr_deleteNotification",  
 							( '2', 'state'       ) : "Active",  
 							( '2', 'actiontype'  ) : "Procedure",  
 						
 							( '3', 'displaytext' ) : "Open page 1",  
 							( '3', 'tooltip'     ) : "",  
 							( '3', 'icon'        ) : "aimms-display",  
-							( '3', 'procedure'   ) : "w2w::pr_openPage1",  
+							( '3', 'procedure'   ) : "uit::pr_openPage1",  
 							( '3', 'state'       ) : "Active",  
 							( '3', 'actiontype'  ) : "Procedure",
 						
 							( '4', 'displaytext' ) : "Open page 2",  
 							( '4', 'tooltip'     ) : "",  
 							( '4', 'icon'        ) : "aimms-display3",  
-							( '4', 'procedure'   ) : "w2w::pr_openPage2",  
+							( '4', 'procedure'   ) : "uit::pr_openPage2",  
 							( '4', 'state'       ) : "Active",  
 							( '4', 'actiontype'  ) : "Procedure"
 						
@@ -310,11 +322,13 @@ LibraryModule libUITools {
 			}
 			Procedure pr_showAll {
 				Body: {
+					bp_showUnhandledOnly := 0 ;
 					s_shownNotificationNumbers := s_availableNotificationNumbers ;
 				}
 			}
 			Procedure pr_showUnhandled {
 				Body: {
+					bp_showUnhandledOnly := 1 ;
 					s_shownNotificationNumbers := 
 						{ i_availableNotification | bp_handled(i_availableNotification) = 0 };
 				}
@@ -328,6 +342,11 @@ LibraryModule libUITools {
 							! Set the handled date of the notification just changed.
 							sp_handledDate(ep_storeFocusNotification)   :=
 								if bp_handled(ep_storeFocusNotification) then CurrentToString("%c%y-%m-%d %H:%M:%S") else "" endif ;
+						
+							! Keep the filter: a handled notification leaves the table when only unhandled ones are shown.
+							if bp_showUnhandledOnly then
+								pr_showUnhandled ;
+							endif ;
 						
 						endif ;
 					}

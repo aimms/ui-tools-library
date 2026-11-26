@@ -1,0 +1,15 @@
+include:
+  - project: 'aimms/user-support/templates/template-cicd'
+    ref: main
+    file: '.gitlab-ci-toolkit.yml'
+
+# This toolkit is an AIMMS library: it has a Project.xml, but no .aimms file.
+# The template's badge jobs read the AIMMS version from a .aimms file, so they are
+# switched off here. Update the version badges in the README and the article by hand.
+update-readme:
+  rules:
+    - when: never
+
+update-howto:
+  rules:
+    - when: never
