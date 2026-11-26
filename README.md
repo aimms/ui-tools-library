@@ -4,7 +4,6 @@
 
 [![Downloads](https://img.shields.io/github/downloads/aimms/ui-tools-library/total?style=for-the-badge&logo=github&labelColor=0B0B0C&color=2B37C9)](https://github.com/aimms/ui-tools-library/releases)
 ![aimms version](https://img.shields.io/badge/aimms-26.8-BCEC48?style=for-the-badge&labelColor=0B0B0C&color=BCEC48)
-![aimms version](https://img.shields.io/badge/aimms-26.8-BCEC48?style=for-the-badge&labelColor=0B0B0C&color=BCEC48)
 
 This repository contains an aimms toolkit: **UI Tools Library**. It collects the findings of your data checks in a notification list for the WebUI, and reports progress in both WinUI and WebUI.
 
