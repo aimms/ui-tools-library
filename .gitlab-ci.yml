@@ -12,3 +12,52 @@ include:
 update-howto:
   rules:
     - when: never
+
+# ─────────────────────────────────────────
+# Keep the copy of the library in the example project up to date.
+#
+# On every release tag, copy the library files into the folder libUITools of
+# 717-ui-tools-test, on a branch, and open a merge request there. Review and merge
+# it to publish the new version of the example.
+# Requires: GITLAB_TOKEN with write access to the example project.
+# ─────────────────────────────────────────
+update-example:
+  extends: .k8s_basic_job
+  stage: release
+  rules:
+    - if: '$CI_COMMIT_TAG'
+  variables:
+    EXAMPLE_PROJECT: "aimms/user-support/how-to-projects/717-ui-tools-test"
+    EXAMPLE_LIB_DIR: "libUITools"
+  script:
+    - !reference [.git_setup]
+    - |
+      LIB_FILES="Project.xml libUITools.ams libUITools.nch WebUI User Files"
+      BRANCH="ci/update-libuitools-${CI_COMMIT_TAG}"
+
+      git clone "https://oauth2:${GITLAB_TOKEN}@gitlab.aimms.com/${EXAMPLE_PROJECT}.git" example
+      cd example
+      git checkout -B "$BRANCH"
+
+      # Replace the copy of the library with the files of this tag.
+      rm -rf "$EXAMPLE_LIB_DIR"
+      mkdir -p "$EXAMPLE_LIB_DIR"
+      cp -r "$CI_PROJECT_DIR/Project.xml" "$CI_PROJECT_DIR/libUITools.ams" "$CI_PROJECT_DIR/libUITools.nch" \
+            "$CI_PROJECT_DIR/WebUI" "$CI_PROJECT_DIR/User Files" "$EXAMPLE_LIB_DIR/"
+
+      git add -A "$EXAMPLE_LIB_DIR"
+      if git diff --cached --quiet; then
+        echo "The example already has libUITools ${CI_COMMIT_TAG}, nothing to do."
+        exit 0
+      fi
+      git commit -m "Update libUITools to ${CI_COMMIT_TAG}"
+      git push --force origin "$BRANCH"
+
+      PROJECT_ENC=$(python3 -c "import urllib.parse,os; print(urllib.parse.quote(os.environ['EXAMPLE_PROJECT'], safe=''))")
+      export BRANCH
+      MR_DATA=$(python3 -c "import json, os; print(json.dumps({'source_branch': os.environ['BRANCH'], 'target_branch': 'main', 'title': 'Update libUITools to ' + os.environ['CI_COMMIT_TAG'], 'description': 'Automated copy of the library from ' + os.environ['CI_PROJECT_URL'] + ' at tag ' + os.environ['CI_COMMIT_TAG'] + '.', 'reviewer_ids': [int(os.environ['DEFAULT_REVIEWER_ID'])], 'remove_source_branch': True}))")
+      curl --fail --silent --show-error -X POST \
+        -H "PRIVATE-TOKEN: $GITLAB_TOKEN" -H "Content-Type: application/json" \
+        "https://gitlab.aimms.com/api/v4/projects/${PROJECT_ENC}/merge_requests" -d "$MR_DATA" > /dev/null \
+        || echo "Could not open the merge request (it may already exist). The branch $BRANCH is pushed."
+      echo "Opened a merge request in ${EXAMPLE_PROJECT} for libUITools ${CI_COMMIT_TAG}."
