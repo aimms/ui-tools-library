@@ -3,13 +3,12 @@ include:
     ref: main
     file: '.gitlab-ci-toolkit.yml'
 
-# This toolkit is an AIMMS library: it has a Project.xml, but no .aimms file.
-# The template's badge jobs read the AIMMS version from a .aimms file, so they are
-# switched off here. Update the version badges in the README and the article by hand.
-update-readme:
-  rules:
-    - when: never
-
+# This toolkit is an AIMMS library: the template reads the AIMMS version from its
+# Project.xml and keeps the badge in README.md up to date.
+#
+# The badges of article 717 come from the example project 717-ui-tools-test, which
+# also has the WebUI version. Only one project per article updates its badges, so
+# this toolkit does not.
 update-howto:
   rules:
     - when: never
